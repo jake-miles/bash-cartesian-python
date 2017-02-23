@@ -60,6 +60,14 @@ comma = Token(",")
 # without python complaining that it hasn't been defined yet.
 literal = Lazy(lambda: AnyToken().map(toLit).rename("Lit"))    
 
+# a conjunction, which becomes an `And`, at the "top level",
+# i.e. not nested within a disjunction.  an `And` is a sequence of terms
+# such as "abc{d,e}", which is the conjunction of "abc" and "{d,e}"
+_and = Lazy(lambda: OneOrMore(OneOf([
+    Lazy(lambda: _or),
+    Lazy(lambda: faux_or),
+    literal])).map(toAnd).rename('And'))
+
 # returns a grammar defining a branch of a disjunction
 # ending in the given delimiter token, which will be , or }
 def branch_ending_in(token):
@@ -79,6 +87,10 @@ def branch_ending_in(token):
         AllOf([branch_contents, token]).map(keep_first)
     ])
 
+# matching curlies that don't contain a comma look a lot like an
+# `Or` but become literal curlies
+faux_or = AllOf([open_curly, Unless(close_curly, _and), close_curly])
+
 # this defines the grammar of a disjunction, e.g. {d,e}, which becomes an `Or`
 # e.g. "{d,e}" becomes a disjunction with branches "d" and "e".
 _or = Lazy(lambda: AllOf([
@@ -87,11 +99,6 @@ _or = Lazy(lambda: AllOf([
     OneOrMore(branch_ending_in(comma)).keep('branches'),
     branch_ending_in(close_curly).keep('last_branch')
 ]).map(toOr).clear().rename('Or'))
-
-# a conjunction, which becomes an `And`, at the "top level",
-# i.e. not nested within a disjunction.  an `And` is a sequence of terms
-# such as "abc{d,e}", which is the conjunction of "abc" and "{d,e}"
-_and = Lazy(lambda: OneOrMore(OneOf([_or, literal])).map(toAnd).rename('And'))
 
 # the root parser
 top_level_expr = OneOf([_and,
