@@ -26,22 +26,29 @@ class Grammar:
 
     For example:
 
-    class Addition:
-      def __init__(self, left, right):
-        self.left = left
-        self.right = right
+```
+class Addition:
+  "Represents an addition of two numbers"
+  def __init__(self, left, right):
+    self.left = left
+    self.right = right
+    
+def toAddition(value, keeps):
+    Addition(keeps['left'], keeps['right'])
+    
+addition = AllOf([AnyToken().map(toNumber).keep('left'), 
+                  Token("+"), 
+                  AnyToken().map(toNumber).keep('right')]).map(toAddition)
 
-    addition = AllOf([AnyToken().map(toNumber), 
-                      Token("+"), 
-                      AnyToken().map(toNumber)]).map(Addition)
+(result, end) = addition.parse(Cursor["2", "+", "3", "-", "1"])
 
-    (result, end) = addition.parse(["2", "+", "3", "-", "1")
-
-    result == Addition("2", "3")
-
-    `end` is the cursor on the input after parsing the `addition`, so
-    a Cursor pointing to ["-", "1"]. If there is no more string after matching
-    a Grammar, `end` would be an empty Cursor.
+# result == Addition("2", "3")
+```
+   
+`end` at that point is the cursor on the input just after parsing the `addition`, so
+a Cursor pointing to ["-", "1"]. If there is no more string after matching
+a Grammar, `end` would be an empty Cursor.  If it did not match the string,
+`result` would be falsy and `end` would be a Cursor matching the original.
 
     The subtypes you compose to create the structure of the grammar are:
 
